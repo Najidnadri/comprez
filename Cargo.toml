@@ -1,9 +1,8 @@
 [package]
 name = "comprez"
 authors = ["muhd.najid.nadri@gmail.com"]
-homepage = "https://github.com/Najidnadri/comprez"
 repository = "https://github.com/Najidnadri/comprez"
-version = "0.0.1"
+version = "0.0.11"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 keywords = ["compress", "algorithm"]
