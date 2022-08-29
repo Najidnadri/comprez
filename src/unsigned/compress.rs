@@ -2,7 +2,7 @@ use std::char::from_digit;
 
 use crate::error::CompressError;
 
-use super::Unsigned;
+use super::super::Unsigned;
 
 //compress
 impl Unsigned {

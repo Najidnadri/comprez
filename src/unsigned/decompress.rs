@@ -1,6 +1,6 @@
 use crate::error::DecompressError;
 
-use super::Unsigned;
+use super::super::Unsigned;
 
 //decompress
 impl Unsigned {
