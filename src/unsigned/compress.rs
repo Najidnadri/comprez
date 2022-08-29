@@ -7,6 +7,9 @@ use super::super::Unsigned;
 //compress
 impl Unsigned {
     //1 byte
+    /// Compress a u32. argument conditions: even number, capped at 478,
+    /// Compressed from 4 bytes to 1 byte
+    /// 
     pub fn compress_478_even(num: u32) -> Result<[u8; 1], CompressError> {
         if num % 2 != 0 {
             return Err(CompressError::create(CompressError::NotEven(format!("{}", num))))
@@ -28,6 +31,9 @@ impl Unsigned {
     } 
 
     //2 bytes
+    /// Compress a u32. argument conditions: even number, capped at 122_878,
+    /// Compressed from 4 bytes to 2 bytes
+    ///
     pub fn compress_122_878_even(num: u32) ->Result<[u8; 2], CompressError> {
         if num % 2 != 0 {
             return Err(CompressError::create(CompressError::NotEven(format!("{}", num))))
@@ -53,6 +59,9 @@ impl Unsigned {
         Ok([res[0], res[1]])
     }
 
+    /// Compress a u32. argument conditions: capped at 61_439,
+    /// Compressed from 4 bytes to 2 bytes
+    /// 
     pub fn compress_61_439(num: u32) -> Result<[u8;2], CompressError> {
         if num > 61_439 {
             return Err(CompressError::create(CompressError::Overflow(format!("given: {}, max-num: 61_439", num))))
@@ -86,6 +95,24 @@ impl Unsigned {
     }
 
     //3bytes
+    /// Compress a u64. argument conditions: even number, capped at 31_457_278,
+    /// Compressed from 8 bytes to 3 bytes
+    /// 
+    /// # Example
+    /// 
+    /// Basic Usage:
+    /// 
+    /// ```rust
+    /// 
+    /// fn main() {
+    ///     let num = 10_000_000u64;
+    ///     let compressed = compress_31_457_278_even(num).unwrap();
+    ///     let decompressed = decompress_31_457_278_even(compressed.to_vec()).unwrap();
+    ///     
+    ///     
+    /// }
+    /// ```
+    /// 
     pub fn compress_31_457_278_even(num: u64) -> Result<[u8;3], CompressError> {
         if num % 2 != 0 {
             return Err(CompressError::create(CompressError::NotEven(format!("{}", num))))
@@ -111,6 +138,9 @@ impl Unsigned {
         Ok([res[0], res[1], res[2]])
     }
     
+    /// Compress a u64. argument conditions: capped at 15_728_639,
+    /// Compressed from 8 bytes to 3 bytes
+    /// 
     pub fn compress_15_728_639(num: u64) -> Result<[u8; 3], CompressError> {
         if num > 15_728_639 {
             return Err(CompressError::create(CompressError::Overflow(format!("given: {}, max-num: 15_728_639", num))))
@@ -143,6 +173,9 @@ impl Unsigned {
     }
 
     //4bytes
+    /// Compress a u64. argument conditions: even number, capped at 8_053_063_678,
+    /// Compressed from 8 bytes to 4 bytes
+    /// 
     pub fn compress_8_053_063_678_even(num: u64) -> Result<[u8; 4], CompressError> {
         if num % 2 != 0 {
             return Err(CompressError::create(CompressError::NotEven(format!("{}", num))))
@@ -169,6 +202,9 @@ impl Unsigned {
 
     }
 
+    /// Compress a u64. argument conditions: capped at 4_026_531_839,
+    /// Compressed from 8 bytes to 4 bytes
+    /// 
     pub fn compress_4_026_531_839(num: u64) -> Result<[u8;4], CompressError> {
         if num > 4_026_531_839 {
             return Err(CompressError::create(CompressError::Overflow(format!("given: {}, max-num: 4_026_531_839", num))))
