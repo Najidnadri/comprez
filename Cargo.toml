@@ -6,7 +6,7 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 keywords = ["compress", "algorithm", "struct"]
-description = "A library for compressing and decompressing big integers"
+description = "A library for compressing and decompressing structs"
 readme = "README.md"
 
 
