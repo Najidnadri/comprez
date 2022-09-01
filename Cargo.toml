@@ -2,10 +2,10 @@
 name = "comprez"
 authors = ["muhd.najid.nadri@gmail.com"]
 repository = "https://github.com/Najidnadri/comprez"
-version = "0.0.2"
+version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-keywords = ["compress", "algorithm"]
+keywords = ["compress", "algorithm", "struct"]
 description = "A library for compressing and decompressing big integers"
 readme = "README.md"
 

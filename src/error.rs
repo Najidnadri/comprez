@@ -10,7 +10,7 @@ pub enum CompressError {
 impl CompressError {
     pub fn create(self) -> Self {
         match self {
-            Self::Overflow(s) => {
+            Self::Overflow(s) => { //s= given: {}, max-num: 263_882_790_666_238
                 CompressError::Overflow(format!("Compress Error; Number overflow; {}", s))
             },
             Self::NotEven(s) => {
@@ -29,6 +29,7 @@ impl CompressError {
 #[derive(Debug)]
 pub enum DecompressError {
     WrongBytesLength(String),
+    BinariesToIntErr(String),
     Unknown(String),
 }
 
@@ -38,6 +39,9 @@ impl DecompressError {
             Self::WrongBytesLength(s) => {
                 DecompressError::WrongBytesLength(format!("Decompress Error; Wrong bytes length; {}", s)) //given:2 length, should be: 1 length
             },
+            Self::BinariesToIntErr(s) => {
+                DecompressError::BinariesToIntErr(format!("Decompress Error; Error parsing the binaries given to integer; {}", s))
+            }
             Self::Unknown(s) => {
                 DecompressError::Unknown(s)
             }
