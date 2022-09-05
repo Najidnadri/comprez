@@ -14,8 +14,8 @@ Put this into your cargo.toml
 
 ```
 [dependencies]
-comprez_macro = 0.1.0
-comprez = 0.1.0
+comprez_macro = 0.2.0
+comprez = 0.2.0
 ```
 
 
