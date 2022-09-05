@@ -67,7 +67,7 @@ TODO!
 ## Features
 
 - [x] Unsigned 
-- [ ] Signed 
+- [x] Signed 
 - [ ] Big Int
 - [ ] Even numbers
 - [ ] Enum & Union
