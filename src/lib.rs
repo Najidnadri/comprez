@@ -10,7 +10,7 @@
 
 //! ```rust
 //! use comprez_macro::Comprezable;
-//! use comprez::{*, error::{CompressError, DecompressError}};   
+//! use comprez::{*, error::{CompressError, DecompressError}, comprezable::Comprezable};   
 //! 
 //! #[derive(Comprezable, Debug)]
 //! struct MyStruct {
@@ -46,549 +46,22 @@
 //! }
 //! ```
 
-use error::{CompressError, DecompressError};
+use core::panic;
+
+use error::DecompressError;
 
 pub mod error;
 
-
-///
 /// Trait for compressing structs
-pub trait Comprezable<Rhs = Self> {
-    ///Just put None for the max_num parameter
-    fn compress(self, max_num: Option<Rhs>) -> Result<Compressed, CompressError>;
+pub mod comprezable;
 
-    fn max_binaries(max_num: Option<Rhs>) -> BinaryChunk;
 
-    fn decompress(compressed: Compressed) -> Result<Self, DecompressError> where Self: Sized;
-}
 
 
-impl Comprezable for u8 {
-    fn compress(self, max_num: Option<Self>) -> Result<Compressed, CompressError> {
-        let max_num = max_num.unwrap();
-        if self > max_num {
-            return Err(CompressError::create(CompressError::Overflow(format!("given: {}, max-num: {}", self,max_num))))
-        }
-        let mult_8_bit_size = find_mult_8_bit_size(max_num, 8, 0, 2);
 
-        let compressed_binaries = compress_num(self, mult_8_bit_size, 8, 2, 0);
 
-        Ok(Compressed::Binaries(compressed_binaries))
-    }
 
-    fn max_binaries(max_num: Option<Self>) -> BinaryChunk {
-        
-        let max_num = max_num.unwrap();
-        BinaryChunk::Single(find_mult_8_bit_size(max_num, 8, 0, 2) + 3)
-    }
-
-    fn decompress(compressed: Compressed) -> Result<u8, DecompressError> {
-        let binaries = compressed.to_binaries();
-        let split_at = binaries.len() - 3;
-
-        let (mult_8, remainder) = binaries.split_at(split_at);
-    
-    
-        let mult_8_bits = mult_8.iter().map(|bit| bit.to_string()).collect::<String>();
-        let remainder_bits = remainder.iter().map(|bit| bit.to_string()).collect::<String>();
-    
-        let mult_8 = u8::from_str_radix(&mult_8_bits, 2).map_err(|_| {
-            DecompressError::create(DecompressError::BinariesToIntErr(format!("Binaries given: {}, integer value: u8", mult_8_bits)))
-        })? * 8;
-        let remainder = u8::from_str_radix(&remainder_bits, 2).map_err(|_| {
-            DecompressError::create(DecompressError::BinariesToIntErr(format!("Binaries given: {}, integer value: u8", remainder_bits)))
-        })?;
-    
-        Ok(mult_8 + remainder)
-    }
-}
-
-impl Comprezable for u16 {
-    fn compress(self, max_num: Option<Self>) -> Result<Compressed, CompressError> {
-        let max_num = max_num.unwrap();
-        if self > max_num {
-            return Err(CompressError::create(CompressError::Overflow(format!("given: {}, max-num: {}", self,max_num))))
-        }
-        let mult_8_bit_size = find_mult_8_bit_size(max_num, 8, 0, 2);
-        let compressed_binaries = compress_num(self, mult_8_bit_size, 8, 2, 0);
-        let res = compressed_binaries.iter().map(|&binary| binary as u8).collect::<Vec<u8>>();
-
-        Ok(Compressed::Binaries(res))
-    }
-
-    fn max_binaries(max_num: Option<Self>) -> BinaryChunk {
-        let max_num = max_num.unwrap();
-        BinaryChunk::Single(find_mult_8_bit_size(max_num, 8, 0, 2) + 3)
-    }
-
-    fn decompress(compressed: Compressed) -> Result<u16, DecompressError> {
-        let binaries = compressed.to_binaries();
-        let split_at = binaries.len() - 3;
-
-        let (mult_8, remainder) = binaries.split_at(split_at);
-    
-    
-        let mult_8_bits = mult_8.iter().map(|bit| bit.to_string()).collect::<String>();
-        let remainder_bits = remainder.iter().map(|bit| bit.to_string()).collect::<String>();
-    
-        let mult_8 = u16::from_str_radix(&mult_8_bits, 2).map_err(|_| {
-            DecompressError::create(DecompressError::BinariesToIntErr(format!("Binaries given: {}, integer value: u16", mult_8_bits)))
-        })? * 8;
-        let remainder = u16::from_str_radix(&remainder_bits, 2).map_err(|_| {
-            DecompressError::create(DecompressError::BinariesToIntErr(format!("Binaries given: {}, integer value: u16", remainder_bits)))
-        })?;
-    
-        Ok(mult_8 + remainder)
-    }
-}
-
-impl Comprezable for u32 {
-    fn compress(self, max_num: Option<Self>) -> Result<Compressed, CompressError> {
-        let max_num = max_num.unwrap();
-        if self > max_num {
-            return Err(CompressError::create(CompressError::Overflow(format!("given: {}, max-num: {}", self,max_num))))
-        }
-        let mult_8_bit_size = find_mult_8_bit_size(max_num, 8, 0, 2);
-        let compressed_binaries = compress_num(self, mult_8_bit_size, 8, 2, 0);
-        let res = compressed_binaries.iter().map(|&binary| binary as u8).collect::<Vec<u8>>();
-
-        Ok(Compressed::Binaries(res))
-    }
-
-    fn max_binaries(max_num: Option<Self>) -> BinaryChunk {
-        let max_num = max_num.unwrap();
-        BinaryChunk::Single(find_mult_8_bit_size(max_num, 8, 0, 2) + 3)
-    }
-
-    fn decompress(compressed: Compressed) -> Result<u32, DecompressError> {
-        let binaries = compressed.to_binaries();
-        let split_at = binaries.len() - 3;
-
-        let (mult_8, remainder) = binaries.split_at(split_at);
-    
-    
-        let mult_8_bits = mult_8.iter().map(|bit| bit.to_string()).collect::<String>();
-        let remainder_bits = remainder.iter().map(|bit| bit.to_string()).collect::<String>();
-    
-        let mult_8 = u32::from_str_radix(&mult_8_bits, 2).map_err(|_| {
-            DecompressError::create(DecompressError::BinariesToIntErr(format!("Binaries given: {}, integer value: u32", mult_8_bits)))
-        })? * 8;
-        let remainder = u32::from_str_radix(&remainder_bits, 2).map_err(|_| {
-            DecompressError::create(DecompressError::BinariesToIntErr(format!("Binaries given: {}, integer value: u32", remainder_bits)))
-        })?;
-    
-        Ok(mult_8 + remainder)
-    }
-}
-impl Comprezable for u64 {
-    fn compress(self, max_num: Option<Self>) -> Result<Compressed, CompressError> {
-        let max_num = max_num.unwrap();
-        if self > max_num {
-            return Err(CompressError::create(CompressError::Overflow(format!("given: {}, max-num: {}", self,max_num))))
-        }
-        let mult_8_bit_size = find_mult_8_bit_size(max_num, 8, 0, 2);
-        let compressed_binaries = compress_num(self, mult_8_bit_size, 8, 2, 0);
-        let res = compressed_binaries.iter().map(|&binary| binary as u8).collect::<Vec<u8>>();
-
-        Ok(Compressed::Binaries(res))
-    }
-
-    fn max_binaries(max_num: Option<Self>) -> BinaryChunk {
-        let max_num = max_num.unwrap();
-        BinaryChunk::Single(find_mult_8_bit_size(max_num, 8, 0, 2) + 3)
-    }
-
-    fn decompress(compressed: Compressed) -> Result<u64, DecompressError> {
-        let binaries = compressed.to_binaries();
-        let split_at = binaries.len() - 3;
-
-        let (mult_8, remainder) = binaries.split_at(split_at);
-    
-    
-        let mult_8_bits = mult_8.iter().map(|bit| bit.to_string()).collect::<String>();
-        let remainder_bits = remainder.iter().map(|bit| bit.to_string()).collect::<String>();
-    
-        let mult_8 = u64::from_str_radix(&mult_8_bits, 2).map_err(|_| {
-            DecompressError::create(DecompressError::BinariesToIntErr(format!("Binaries given: {}, integer value: u64", mult_8_bits)))
-        })? * 8;
-        let remainder = u64::from_str_radix(&remainder_bits, 2).map_err(|_| {
-            DecompressError::create(DecompressError::BinariesToIntErr(format!("Binaries given: {}, integer value: u64", remainder_bits)))
-        })?;
-    
-        Ok(mult_8 + remainder)
-    }
-}
-impl Comprezable for u128 {
-    fn compress(self, max_num: Option<Self>) -> Result<Compressed, CompressError> {
-        let max_num = max_num.unwrap();
-        if self > max_num {
-            return Err(CompressError::create(CompressError::Overflow(format!("given: {}, max-num: {}", self,max_num))))
-        }
-        let mult_8_bit_size = find_mult_8_bit_size(max_num, 8, 0, 2);
-        let compressed_binaries = compress_num(self, mult_8_bit_size, 8, 2, 0);
-        let res = compressed_binaries.iter().map(|&binary| binary as u8).collect::<Vec<u8>>();
-
-        Ok(Compressed::Binaries(res))
-    }
-
-    fn max_binaries(max_num: Option<Self>) -> BinaryChunk {
-        let max_num = max_num.unwrap();
-        BinaryChunk::Single(find_mult_8_bit_size(max_num, 8, 0, 2) + 3)
-    }
-
-    fn decompress(compressed: Compressed) -> Result<u128, DecompressError> {
-        let binaries = compressed.to_binaries();
-        let split_at = binaries.len() - 3;
-
-        let (mult_8, remainder) = binaries.split_at(split_at);
-    
-    
-        let mult_8_bits = mult_8.iter().map(|bit| bit.to_string()).collect::<String>();
-        let remainder_bits = remainder.iter().map(|bit| bit.to_string()).collect::<String>();
-    
-        let mult_8 = u128::from_str_radix(&mult_8_bits, 2).map_err(|_| {
-            DecompressError::create(DecompressError::BinariesToIntErr(format!("Binaries given: {}, integer value: u128", mult_8_bits)))
-        })? * 8;
-        let remainder = u128::from_str_radix(&remainder_bits, 2).map_err(|_| {
-            DecompressError::create(DecompressError::BinariesToIntErr(format!("Binaries given: {}, integer value: u128", remainder_bits)))
-        })?;
-    
-        Ok(mult_8 + remainder)
-    }
-}
-
- 
-//signed
-impl Comprezable for i8 {
-    fn compress(self, max_num: Option<Self>) -> Result<Compressed, CompressError> {
-        let max_num = max_num.unwrap();
-        if self.abs() > max_num {
-            return Err(CompressError::create(CompressError::Overflow(format!("given: {}, max-num: {}", self, max_num))))
-        }
-
-
-        let mult_8_bit_size = find_mult_8_bit_size(max_num.abs(), 8, 0, 2);
-        let compressed_binaries = compress_num(self.abs(), mult_8_bit_size, 8, 2, 0);
-        let mut res = compressed_binaries.iter().map(|&binary| binary as u8).collect::<Vec<u8>>();
-
-        if self < 0 {
-            res.insert(0, 0)
-        } else {
-            res.insert(0, 1);
-        }
-
-        Ok(Compressed::Binaries(res))
-    }
-
-    fn max_binaries(max_num: Option<Self>) -> BinaryChunk {
-        let max_num = max_num.unwrap();
-        BinaryChunk::Single(find_mult_8_bit_size(max_num.abs(), 8, 0, 2) + 4)
-    }
-
-    fn decompress(compressed: Compressed) -> Result<i8, DecompressError> {
-        let mut binaries = compressed.to_binaries();
-        let sign = binaries.remove(0);
-        let split_at = binaries.len() - 3;
-
-        let (mult_8, remainder) = binaries.split_at(split_at);
-    
-    
-        let mult_8_bits = mult_8.iter().map(|bit| bit.to_string()).collect::<String>();
-        let remainder_bits = remainder.iter().map(|bit| bit.to_string()).collect::<String>();
-    
-        let mult_8 = i8::from_str_radix(&mult_8_bits, 2).map_err(|_| {
-            DecompressError::create(DecompressError::BinariesToIntErr(format!("Binaries given: {}, integer value: i8", mult_8_bits)))
-        })? * 8;
-        let remainder = i8::from_str_radix(&remainder_bits, 2).map_err(|_| {
-            DecompressError::create(DecompressError::BinariesToIntErr(format!("Binaries given: {}, integer value: i8", remainder_bits)))
-        })?;
-
-        let mut res = mult_8 + remainder;
-
-        match sign {
-            0 => {
-                res = res * -1;
-            },
-            1 => (),
-            _ => panic!()
-        }
-    
-        Ok(res)
-    }
-}
-
-impl Comprezable for i16 {
-    fn compress(self, max_num: Option<Self>) -> Result<Compressed, CompressError> {
-        let max_num = max_num.unwrap();
-        if self.abs() > max_num {
-            return Err(CompressError::create(CompressError::Overflow(format!("given: {}, max-num: {}", self, max_num))))
-        }
-
-
-        let mult_8_bit_size = find_mult_8_bit_size(max_num.abs(), 8, 0, 2);
-        let compressed_binaries = compress_num(self.abs(), mult_8_bit_size, 8, 2, 0);
-        let mut res = compressed_binaries.iter().map(|&binary| binary as u8).collect::<Vec<u8>>();
-
-        if self < 0 {
-            res.insert(0, 0)
-        } else {
-            res.insert(0, 1);
-        }
-
-        Ok(Compressed::Binaries(res))
-    }
-
-    fn max_binaries(max_num: Option<Self>) -> BinaryChunk {
-        let max_num = max_num.unwrap();
-        BinaryChunk::Single(find_mult_8_bit_size(max_num.abs(), 8, 0, 2) + 4)
-    }
-
-    fn decompress(compressed: Compressed) -> Result<i16, DecompressError> {
-        let mut binaries = compressed.to_binaries();
-        let sign = binaries.remove(0);
-        let split_at = binaries.len() - 3;
-
-        let (mult_8, remainder) = binaries.split_at(split_at);
-    
-    
-        let mult_8_bits = mult_8.iter().map(|bit| bit.to_string()).collect::<String>();
-        let remainder_bits = remainder.iter().map(|bit| bit.to_string()).collect::<String>();
-    
-        let mult_8 = i16::from_str_radix(&mult_8_bits, 2).map_err(|_| {
-            DecompressError::create(DecompressError::BinariesToIntErr(format!("Binaries given: {}, integer value: i16", mult_8_bits)))
-        })? * 8;
-        let remainder = i16::from_str_radix(&remainder_bits, 2).map_err(|_| {
-            DecompressError::create(DecompressError::BinariesToIntErr(format!("Binaries given: {}, integer value: i16", remainder_bits)))
-        })?;
-
-        let mut res = mult_8 + remainder;
-
-        match sign {
-            0 => {
-                res = res * -1;
-            },
-            1 => (),
-            _ => panic!()
-        }
-    
-        Ok(res)
-    }
-}
-
-
-impl Comprezable for i32 {
-    fn compress(self, max_num: Option<Self>) -> Result<Compressed, CompressError> {
-        let max_num = max_num.unwrap();
-        if self.abs() > max_num {
-            return Err(CompressError::create(CompressError::Overflow(format!("given: {}, max-num: {}", self, max_num))))
-        }
-
-
-        let mult_8_bit_size = find_mult_8_bit_size(max_num.abs(), 8, 0, 2);
-        let compressed_binaries = compress_num(self.abs(), mult_8_bit_size, 8, 2, 0);
-        let mut res = compressed_binaries.iter().map(|&binary| binary as u8).collect::<Vec<u8>>();
-
-        if self < 0 {
-            res.insert(0, 0)
-        } else {
-            res.insert(0, 1);
-        }
-
-        Ok(Compressed::Binaries(res))
-    }
-
-    fn max_binaries(max_num: Option<Self>) -> BinaryChunk {
-        let max_num = max_num.unwrap();
-        BinaryChunk::Single(find_mult_8_bit_size(max_num.abs(), 8, 0, 2) + 4)
-    }
-
-    fn decompress(compressed: Compressed) -> Result<i32, DecompressError> {
-        let mut binaries = compressed.to_binaries();
-        let sign = binaries.remove(0);
-        let split_at = binaries.len() - 3;
-
-        let (mult_8, remainder) = binaries.split_at(split_at);
-    
-    
-        let mult_8_bits = mult_8.iter().map(|bit| bit.to_string()).collect::<String>();
-        let remainder_bits = remainder.iter().map(|bit| bit.to_string()).collect::<String>();
-    
-        let mult_8 = i32::from_str_radix(&mult_8_bits, 2).map_err(|_| {
-            DecompressError::create(DecompressError::BinariesToIntErr(format!("Binaries given: {}, integer value: i32", mult_8_bits)))
-        })? * 8;
-        let remainder = i32::from_str_radix(&remainder_bits, 2).map_err(|_| {
-            DecompressError::create(DecompressError::BinariesToIntErr(format!("Binaries given: {}, integer value: i32", remainder_bits)))
-        })?;
-
-        let mut res = mult_8 + remainder;
-
-        match sign {
-            0 => {
-                res = res * -1;
-            },
-            1 => (),
-            _ => panic!()
-        }
-    
-        Ok(res)
-    }
-}
-
-impl Comprezable for i64 {
-    fn compress(self, max_num: Option<Self>) -> Result<Compressed, CompressError> {
-        let max_num = max_num.unwrap();
-        if self.abs() > max_num {
-            return Err(CompressError::create(CompressError::Overflow(format!("given: {}, max-num: {}", self, max_num))))
-        }
-
-
-        let mult_8_bit_size = find_mult_8_bit_size(max_num.abs(), 8, 0, 2);
-        let compressed_binaries = compress_num(self.abs(), mult_8_bit_size, 8, 2, 0);
-        let mut res = compressed_binaries.iter().map(|&binary| binary as u8).collect::<Vec<u8>>();
-
-        if self < 0 {
-            res.insert(0, 0)
-        } else {
-            res.insert(0, 1);
-        }
-
-        Ok(Compressed::Binaries(res))
-    }
-
-    fn max_binaries(max_num: Option<Self>) -> BinaryChunk {
-        let max_num = max_num.unwrap();
-        BinaryChunk::Single(find_mult_8_bit_size(max_num.abs(), 8, 0, 2) + 4)
-    }
-
-    fn decompress(compressed: Compressed) -> Result<i64, DecompressError> {
-        let mut binaries = compressed.to_binaries();
-        let sign = binaries.remove(0);
-        let split_at = binaries.len() - 3;
-
-        let (mult_8, remainder) = binaries.split_at(split_at);
-    
-    
-        let mult_8_bits = mult_8.iter().map(|bit| bit.to_string()).collect::<String>();
-        let remainder_bits = remainder.iter().map(|bit| bit.to_string()).collect::<String>();
-    
-        let mult_8 = i64::from_str_radix(&mult_8_bits, 2).map_err(|_| {
-            DecompressError::create(DecompressError::BinariesToIntErr(format!("Binaries given: {}, integer value: i64", mult_8_bits)))
-        })? * 8;
-        let remainder = i64::from_str_radix(&remainder_bits, 2).map_err(|_| {
-            DecompressError::create(DecompressError::BinariesToIntErr(format!("Binaries given: {}, integer value: i64", remainder_bits)))
-        })?;
-
-        let mut res = mult_8 + remainder;
-
-        match sign {
-            0 => {
-                res = res * -1;
-            },
-            1 => (),
-            _ => panic!()
-        }
-    
-        Ok(res)
-    }
-}
-
-impl Comprezable for i128 {
-    fn compress(self, max_num: Option<Self>) -> Result<Compressed, CompressError> {
-        let max_num = max_num.unwrap();
-        if self.abs() > max_num {
-            return Err(CompressError::create(CompressError::Overflow(format!("given: {}, max-num: {}", self, max_num))))
-        }
-
-
-        let mult_8_bit_size = find_mult_8_bit_size(max_num.abs(), 8, 0, 2);
-        let compressed_binaries = compress_num(self.abs(), mult_8_bit_size, 8, 2, 0);
-        let mut res = compressed_binaries.iter().map(|&binary| binary as u8).collect::<Vec<u8>>();
-
-        if self < 0 {
-            res.insert(0, 0)
-        } else {
-            res.insert(0, 1);
-        }
-
-        Ok(Compressed::Binaries(res))
-    }
-
-    fn max_binaries(max_num: Option<Self>) -> BinaryChunk {
-        let max_num = max_num.unwrap();
-        BinaryChunk::Single(find_mult_8_bit_size(max_num.abs(), 8, 0, 2) + 4)
-    }
-
-    fn decompress(compressed: Compressed) -> Result<i128, DecompressError> {
-        let mut binaries = compressed.to_binaries();
-        let sign = binaries.remove(0);
-        let split_at = binaries.len() - 3;
-
-        let (mult_8, remainder) = binaries.split_at(split_at);
-    
-    
-        let mult_8_bits = mult_8.iter().map(|bit| bit.to_string()).collect::<String>();
-        let remainder_bits = remainder.iter().map(|bit| bit.to_string()).collect::<String>();
-    
-        let mult_8 = i128::from_str_radix(&mult_8_bits, 2).map_err(|_| {
-            DecompressError::create(DecompressError::BinariesToIntErr(format!("Binaries given: {}, integer value: i128", mult_8_bits)))
-        })? * 8;
-        let remainder = i128::from_str_radix(&remainder_bits, 2).map_err(|_| {
-            DecompressError::create(DecompressError::BinariesToIntErr(format!("Binaries given: {}, integer value: i128", remainder_bits)))
-        })?;
-
-        let mut res = mult_8 + remainder;
-
-        match sign {
-            0 => {
-                res = res * -1;
-            },
-            1 => (),
-            _ => panic!()
-        }
-    
-        Ok(res)
-    }
-}
-
-
-fn compress_num<N: Ord + std::ops::Div<Output = N> + std::ops::Rem<Output = N> + Copy>(num: N, mult_8_bit_size: usize, divider: N, r: N, zero: N) -> Vec<N> {
-    let mult_8 = num / divider; //divider = 8
-    let remainder = num % divider;
-
-    let mut mult_8_bit = encode(mult_8, r, mult_8_bit_size, zero); //r =2
-    let remainder_bit = encode(remainder, r, 3, zero);
-    mult_8_bit.extend(remainder_bit);
-
-    mult_8_bit
-}
-
-fn encode<N: Ord + std::ops::Div<Output = N> + std::ops::Rem<Output = N> + Copy>(mut num: N, r: N, bit_size: usize, zero: N) -> Vec<N> {
-    let mut res = vec![];
-    while num != zero {
-        let remainder = num % r;
-        num = num / r;
-        res.push(remainder);
-    }
-    res.reverse();
-    while res.len() < bit_size {
-        res.insert(0, zero);
-    }
-    res
-}
-
-fn find_mult_8_bit_size<N: Ord + std::ops::Div<Output = N> + Copy>(mut num: N, divider: N, zero: N, r: N) -> usize {
-
-    num = num / divider; //divder = 8
-    let mut res = 0; 
-    while num != zero { //zero = 0
-        num = num / r; // r = 2
-        res += 1;
-    }
-    res
-}
-
-
-///Wrapper for compression results
+///Wrapper for compression results and decompression arguments
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Compressed {
     Binaries(Vec<u8>),
@@ -596,6 +69,7 @@ pub enum Compressed {
 }
 
 impl Compressed {
+    ///extract the bytes from the wrapper
     pub fn to_bytes(&self) -> Vec<u8> {
         match self {
             Self::Binaries(binaries) => {
@@ -655,6 +129,7 @@ impl Compressed {
 pub enum BinaryChunk {
     Single(usize),
     Nested(Vec<BinaryChunk>),
+    Delimeter,
 }
 
 impl BinaryChunk {
@@ -665,9 +140,35 @@ impl BinaryChunk {
             },
             Self::Nested(sizes) => {
                 sizes.iter().fold(vec![], |mut acc, chunk| { acc.extend(chunk.flatten()); acc})
+            },
+            Self::Delimeter => {
+                vec![0]
             }
         }
     }
+
+    pub fn chunk_up_v2(binaries: &mut Vec<u8>, vec: Vec<Self>) -> Result<Vec<Vec<u8>>, DecompressError> {
+        let mut res: Vec<Vec<u8>> = vec![];
+        for binarychunk in vec {
+            match binarychunk {
+                Self::Single(s) => {
+                    let compressed = binaries.drain(0 .. s).collect::<Vec<_>>();
+                    res.push(compressed);
+                },
+                Self::Nested(chunks) => {
+                    //let mut chunked_binaries = vec![];
+                    let a = BinaryChunk::chunk_up_v2(binaries, chunks).unwrap().into_iter().flatten().collect::<Vec<_>>();
+                    res.push(a);
+                },
+                Self::Delimeter => {
+                    let compressed = delimeter_chunk_v2(binaries).unwrap();
+                    res.push(compressed);
+                }
+            }
+        }
+        
+        Ok(res)
+    } 
 }
 
 
@@ -694,17 +195,27 @@ fn to_binary(bytes: Vec<u8>) -> Vec<u8> {
 }
 
 
-pub fn chunk_up<'a>(mut binaries: &'a [u8], chunks: &'a [usize]) -> Result<Vec<&'a [u8]>, DecompressError> {
+pub fn chunk_up<'a>(mut binaries: &'a [u8], chunks: &'a [usize]) -> Result<Vec<Vec<u8>>, DecompressError> {
     let mut compressed = Vec::new();
     for chunk in chunks {
-        if chunk > &binaries.len() {
-            return Err(DecompressError::WrongBytesLength(String::new()))
+        match *chunk {
+            0 => {
+                let (compressed_chunk, leftover) = delimeter_chunk(&binaries)?;
+                compressed.push(compressed_chunk);
+                binaries = leftover;
+            },
+            _ => {
+                if chunk > &binaries.len() {
+                    return Err(DecompressError::WrongBytesLength(String::new()))
+                }
+                let (left, right) = binaries.split_at(*chunk);
+                compressed.push(left.to_vec());
+                binaries = right;
+            }
         }
-        let (left, right) = binaries.split_at(*chunk);
-        compressed.push(left);
-        binaries = right;
     }
 
+    //error checking
     if !binaries.is_empty() {
         for binary in binaries {
             if binary != &0 {
@@ -715,4 +226,155 @@ pub fn chunk_up<'a>(mut binaries: &'a [u8], chunks: &'a [usize]) -> Result<Vec<&
     Ok(compressed)
 }
 
+fn delimeter_chunk<'a>(mut binaries: &'a[u8]) -> Result<(Vec<u8>, &'a [u8]), DecompressError> {
+    //chunk the meta length properly
+    let mut chunk_metas: Vec<u8> = vec![];
+    
+    loop {
+        
+        let (delimeter, other_binaries) = binaries.split_first().ok_or(DecompressError::WrongBytesLength(String::new()))?; 
+        match delimeter {
+            0 => {
+                if other_binaries.len() < 7 {
+                    return Err(DecompressError::WrongBytesLength(String::new()))
+                }
+                
+                let (temp, leftover) = other_binaries.split_at(7);
+                chunk_metas.extend(temp.to_vec());
+                binaries = leftover;
+            },
+            1 => {
+                if other_binaries.len() < 7 {
+                    return Err(DecompressError::WrongBytesLength(String::new()))
+                }
+                let (temp, leftover) = other_binaries.split_at(7);
+                chunk_metas.extend(temp.to_vec());
+                binaries = leftover;
+                break
+            },
+            _ => {
+                panic!()
+            }
+        };
+    }
+    
+    //turn the chunked to parseable binaries
+    let chunk_metas = chunk_metas.chunks(8).filter(|&chunk| chunk.len() == 8).collect::<Vec<&[u8]>>()
+    .into_iter()
+    .flatten()
+    .map(|bit| bit.to_string())
+    .collect::<String>();
 
+    //binaries to int AKA; size (in bytes) of the compressed vec
+    let meta = u128::from_str_radix(&chunk_metas, 2).unwrap();
+    let length = binaries.len() as u128;
+    if length < meta * 8 {
+        return Err(DecompressError::WrongBytesLength(String::new()))
+    }
+
+    
+
+    let mut res_binaries: Vec<u8> = vec![];
+    for _ in 1 ..= meta {
+        let (binary, leftover) = binaries.split_at(8);
+        res_binaries.extend(binary);
+        binaries = leftover;
+    }
+
+
+    Ok((res_binaries, binaries))
+}
+
+
+fn delimeter_chunk_v2(binaries: &mut Vec<u8>) -> Result<Vec<u8>, DecompressError> {
+    //chunk the meta length properly
+    let mut chunk_metas: Vec<u8> = vec![];
+    loop {
+        if binaries.len() < 8 {
+            return Err(DecompressError::WrongBytesLength(String::new()))
+        }
+        let delimeter = binaries.remove(0);
+        match delimeter {
+            0 => {
+                chunk_metas.extend(binaries.drain(0 .. 7));
+            },
+            1 => {
+                chunk_metas.extend(binaries.drain(0 .. 7));
+                break
+            },
+            _ => {
+                panic!()
+            }
+        };
+    }
+    
+    //turn the chunked to parseable binaries
+    let chunk_metas = chunk_metas.chunks(8).filter(|&chunk| chunk.len() == 8).collect::<Vec<&[u8]>>()
+    .into_iter()
+    .flatten()
+    .map(|bit| bit.to_string())
+    .collect::<String>();
+
+    //binaries to int AKA; size (in bytes) of the compressed vec
+    let meta = u128::from_str_radix(&chunk_metas, 2).unwrap();
+    let length = binaries.len() as u128;
+    if length < meta * 8 {
+        return Err(DecompressError::WrongBytesLength(String::new()))
+    }
+    
+    
+
+    let mut res_binaries: Vec<u8> = vec![];
+    for _ in 1 ..= meta {
+        if binaries.len() < 8 {
+            return Err(DecompressError::WrongBytesLength(String::new()))
+        }
+        res_binaries.extend(binaries.drain(0 .. 8));
+    }
+    
+    Ok(res_binaries)
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use lz4_flex::decompress_size_prepended;
+
+    use super::*;
+
+    #[test]
+    fn test_vec_u8() {
+        
+        let raw = vec![1u8, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+        let demo = vec![8u8, 128, 11, 0, 0, 0, 176, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+        let compressed = Compressed::Bytes(demo);
+        let mut binaries = compressed.to_binaries();
+        
+
+        let a = delimeter_chunk_v2(&mut binaries).unwrap();
+        let decompressed = Compressed::Binaries(a).to_bytes();
+        println!("decompressed: {:?}", decompressed);
+
+        //binary format
+        let b = decompress_size_prepended(&decompressed).unwrap();
+
+        println!(" raw: {:?}", raw);
+        println!("decompressed: {:?}",  b);
+
+        assert_eq!(raw, b);
+
+    }
+
+    #[test]
+    fn binary_chunk_v2() {
+        let demo_nested = vec![BinaryChunk::Single(1), BinaryChunk::Single(3), BinaryChunk::Nested(vec![BinaryChunk::Single(5)]), BinaryChunk::Single(2)];
+        let demo = BinaryChunk::Nested(demo_nested);
+        let mut demo_binaries = vec![1u8, 2, 3, 4, 5, 6, 7, 8, 9, 10,11, 12, 13, 14, 15, 16];
+        
+        if let BinaryChunk::Nested(chunks) = demo {
+            let chunk = BinaryChunk::chunk_up_v2(&mut demo_binaries, chunks);
+        }
+ 
+    }
+}

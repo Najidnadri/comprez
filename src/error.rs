@@ -5,6 +5,7 @@ pub enum CompressError {
     Unknown(String),
     NotEven(String),
     EncodeErr(String),
+    DataNoSupported(String),
 }
 
 impl CompressError {
@@ -22,6 +23,9 @@ impl CompressError {
             Self::Unknown(s) => {
                 CompressError::Unknown(s)
             },
+            Self::DataNoSupported(_) => {
+                CompressError::DataNoSupported(format!("Primitive data type is not supported for using this function"))
+            }
         }
     }
 }
