@@ -8,6 +8,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+
+ 
 //! ```rust
 //! use comprez_macro::Comprezable;
 //! use comprez::{*, error::{CompressError, DecompressError}, comprezable::Comprezable};   
@@ -20,7 +22,8 @@
 //!     num2: u16,
 //!     [#maxNum=100] //from -100 to 100
 //!     num3: i8,
-//!     other_struct: OtherStruct
+//!     other_struct: OtherStruct,
+//!     vec1: Vec<u8>
 //! }
 //! 
 //! #[derive(Comprezable, Debug)]
@@ -34,17 +37,24 @@
 //!         num1: 900,
 //!         num2: 100,
 //!         num3: 10,
-//!         other_struct: OtherStruct { num4: 200 }
+//!         other_struct: OtherStruct { num4: 200 },
+//!         vec1: vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
 //!     };
 //!     
-//!     let compressed = demo_data.compress(None).unwrap(); //Ignore the arguments, just put None.
+//!     let compressed = demo_data.compress().unwrap()
 //!     let compressed_bytes = compressed.to_bytes();
 //!     let compressed_binaries = compressed.to_binaries();
-//! 
+//!     
+//!     let compressed = Compressed::from_bytes(compressed_bytes);
+//!     let compressed = Compressed::from_binaries(compressed_binaries);
 //!     let decompressed = Mystruct::decompressed(compressed).unwrap();
 //!     println!("{:?}", decompressed);
 //! }
 //! ```
+//! 
+//! ## Note
+//! Since the compression of Vec<u8> uses LZ4 flex crate, compressing small vectors might increase the space instead. 
+//! However in the future, self implementation will be created.
 
 use core::panic;
 
@@ -90,6 +100,8 @@ impl Compressed {
         }
     }
 
+
+    ///Extract the binaries from the wrapper
     pub fn to_binaries(&self) -> Vec<u8> {
         match self {
             Self::Binaries(binaries) => {
@@ -101,10 +113,12 @@ impl Compressed {
         }
     }
 
+    ///Handler not important
     pub fn extend_to_res(self, res: &mut Vec<u8>) {
         let binaries = self.to_binaries();
         res.extend(binaries);
     }
+
 
     pub fn combine(self, other: Compressed) -> Self {
         let mut binaries = self.to_binaries();
@@ -114,10 +128,12 @@ impl Compressed {
         Self::Binaries(binaries)
     }
 
+    ///Vec<u8> to Compressed bytes.
     pub fn from_bytes(bytes: Vec<u8>) -> Self {
         Compressed::Bytes(bytes)
     }
 
+    ///Vec<u8> to Compressed binaries.
     pub fn from_binaries(binaries: &[u8]) -> Self {
         Compressed::Binaries(binaries.to_vec())
     }
@@ -194,96 +210,6 @@ fn to_binary(bytes: Vec<u8>) -> Vec<u8> {
     binaries
 }
 
-
-pub fn chunk_up<'a>(mut binaries: &'a [u8], chunks: &'a [usize]) -> Result<Vec<Vec<u8>>, DecompressError> {
-    let mut compressed = Vec::new();
-    for chunk in chunks {
-        match *chunk {
-            0 => {
-                let (compressed_chunk, leftover) = delimeter_chunk(&binaries)?;
-                compressed.push(compressed_chunk);
-                binaries = leftover;
-            },
-            _ => {
-                if chunk > &binaries.len() {
-                    return Err(DecompressError::WrongBytesLength(String::new()))
-                }
-                let (left, right) = binaries.split_at(*chunk);
-                compressed.push(left.to_vec());
-                binaries = right;
-            }
-        }
-    }
-
-    //error checking
-    if !binaries.is_empty() {
-        for binary in binaries {
-            if binary != &0 {
-                return Err(DecompressError::WrongBytesLength(String::new()))
-            }
-        }
-    }
-    Ok(compressed)
-}
-
-fn delimeter_chunk<'a>(mut binaries: &'a[u8]) -> Result<(Vec<u8>, &'a [u8]), DecompressError> {
-    //chunk the meta length properly
-    let mut chunk_metas: Vec<u8> = vec![];
-    
-    loop {
-        
-        let (delimeter, other_binaries) = binaries.split_first().ok_or(DecompressError::WrongBytesLength(String::new()))?; 
-        match delimeter {
-            0 => {
-                if other_binaries.len() < 7 {
-                    return Err(DecompressError::WrongBytesLength(String::new()))
-                }
-                
-                let (temp, leftover) = other_binaries.split_at(7);
-                chunk_metas.extend(temp.to_vec());
-                binaries = leftover;
-            },
-            1 => {
-                if other_binaries.len() < 7 {
-                    return Err(DecompressError::WrongBytesLength(String::new()))
-                }
-                let (temp, leftover) = other_binaries.split_at(7);
-                chunk_metas.extend(temp.to_vec());
-                binaries = leftover;
-                break
-            },
-            _ => {
-                panic!()
-            }
-        };
-    }
-    
-    //turn the chunked to parseable binaries
-    let chunk_metas = chunk_metas.chunks(8).filter(|&chunk| chunk.len() == 8).collect::<Vec<&[u8]>>()
-    .into_iter()
-    .flatten()
-    .map(|bit| bit.to_string())
-    .collect::<String>();
-
-    //binaries to int AKA; size (in bytes) of the compressed vec
-    let meta = u128::from_str_radix(&chunk_metas, 2).unwrap();
-    let length = binaries.len() as u128;
-    if length < meta * 8 {
-        return Err(DecompressError::WrongBytesLength(String::new()))
-    }
-
-    
-
-    let mut res_binaries: Vec<u8> = vec![];
-    for _ in 1 ..= meta {
-        let (binary, leftover) = binaries.split_at(8);
-        res_binaries.extend(binary);
-        binaries = leftover;
-    }
-
-
-    Ok((res_binaries, binaries))
-}
 
 
 fn delimeter_chunk_v2(binaries: &mut Vec<u8>) -> Result<Vec<u8>, DecompressError> {
@@ -373,7 +299,7 @@ mod tests {
         let mut demo_binaries = vec![1u8, 2, 3, 4, 5, 6, 7, 8, 9, 10,11, 12, 13, 14, 15, 16];
         
         if let BinaryChunk::Nested(chunks) = demo {
-            let chunk = BinaryChunk::chunk_up_v2(&mut demo_binaries, chunks);
+            let _chunk = BinaryChunk::chunk_up_v2(&mut demo_binaries, chunks);
         }
  
     }

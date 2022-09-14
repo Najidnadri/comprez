@@ -35,6 +35,8 @@ pub enum DecompressError {
     WrongBytesLength(String),
     BinariesToIntErr(String),
     Unknown(String),
+    FromBytesErr(String),
+    FromBinariesErr(String)
 }
 
 impl DecompressError {
@@ -45,6 +47,12 @@ impl DecompressError {
             },
             Self::BinariesToIntErr(s) => {
                 DecompressError::BinariesToIntErr(format!("Decompress Error; Error parsing the binaries given to integer; {}", s))
+            },
+            Self::FromBytesErr(_) => {
+                DecompressError::FromBytesErr(format!("Parsing err: the vector given cannot be parse into a Compressed Bytes"))
+            },
+            Self::FromBinariesErr(_) => {
+                DecompressError::FromBinariesErr(format!("Parsin err: the vector given cannot be parsed into a Compressed Binaries"))
             }
             Self::Unknown(s) => {
                 DecompressError::Unknown(s)

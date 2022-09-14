@@ -14,8 +14,8 @@ Put this into your cargo.toml
 
 ```
 [dependencies]
-comprez_macro = 0.2.0
-comprez = 0.2.0
+comprez_macro = 0.2.5
+comprez = 0.2.5
 ```
 
 
@@ -34,7 +34,8 @@ struct MyStruct {
     num2: u16,
     [#maxNum=100]
     num3: u8,
-    other_struct: OtherStruct
+    other_struct: OtherStruct,
+    vec1: Vec<u8>
 }
 
 #[derive(Comprezable, Debug)]
@@ -48,13 +49,16 @@ fn main() {
         num1: 900,
         num2: 100,
         num3: 10,
-        other_struct: OtherStruct { num4: 200 }
+        other_struct: OtherStruct { num4: 200 },
+        vec1: vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     };
     
-    let compressed = demo_data.compress(None).unwrap(); //Ignore the arguments, just put None.
+    let compressed = demo_data.compress().unwrap();
     let compressed_bytes = compressed.to_bytes();
     let compressed_binaries = compressed.to_binaries();
 
+    let compressed = Compressed::from_bytes(compressed_bytes);
+    let compressed = Compressed::from_binaries(compressed_binaries);
     let decompressed = Mystruct::decompressed(compressed).unwrap();
     println!("{:?}", decompressed);
 }
@@ -68,6 +72,7 @@ TODO!
 
 - [x] Unsigned 
 - [x] Signed 
+- [x] Vec::u8
 - [ ] Big Int
 - [ ] Even numbers
 - [ ] Enum & Union
@@ -75,7 +80,9 @@ TODO!
 - [ ] Slices & Vectors
 
 
+## Credits
 
+- Vector of u8 are compressed using LZ4 flex library.
 
 
 ## A coffee?

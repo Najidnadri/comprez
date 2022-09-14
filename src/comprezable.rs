@@ -1,7 +1,22 @@
 use crate::{error::{DecompressError, CompressError}, Compressed, BinaryChunk};
 
 pub trait Comprezable<Rhs = Self> {
-    ///Just put None for the max_num parameter
+    ///Compress function
+    /// ## Example
+    /// ```rust
+    /// use comprez_macro::Comprezable;
+    /// use comprez::{*, error::{CompressError, DecompressError}, comprezable::Comprezable};
+    /// 
+    /// #[derive(Comprezable, Debug)]
+    /// struct MyStruct {
+    ///     num1: u32,
+    /// }
+    /// fn main() {
+    ///     let demo = MyStruct{num1: 99};
+    ///      
+    ///     let compressed = demo.compressed().unwrap();
+    /// }
+    /// ```
     fn compress(self) -> Result<Compressed, CompressError>;
 
     fn compress_to_binaries(self, max_num: Option<Rhs>) -> Result<Compressed, CompressError>;
@@ -540,6 +555,8 @@ impl Comprezable for i128 {
 }
 
 use lz4_flex::{compress_prepend_size, decompress_size_prepended};
+
+///Credit to LZ4 flex library for this compression
 impl Comprezable for Vec<u8> {
     fn compress(self) -> Result<Compressed, CompressError> {
         Err(CompressError::create(CompressError::DataNoSupported(String::new())))
