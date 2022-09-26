@@ -6,6 +6,7 @@ pub enum CompressError {
     NotEven(String),
     EncodeErr(String),
     DataNoSupported(String),
+    MetaForVecErr(String),
 }
 
 impl CompressError {
@@ -25,6 +26,9 @@ impl CompressError {
             },
             Self::DataNoSupported(_) => {
                 CompressError::DataNoSupported(format!("Primitive data type is not supported for using this function"))
+            },
+            Self::MetaForVecErr(_) => {
+                CompressError::MetaForVecErr(format!("Error while compressing metadata of length for the vector given"))
             }
         }
     }
@@ -36,7 +40,8 @@ pub enum DecompressError {
     BinariesToIntErr(String),
     Unknown(String),
     FromBytesErr(String),
-    FromBinariesErr(String)
+    FromBinariesErr(String),
+    PrimitiveDataErr(String),
 }
 
 impl DecompressError {
@@ -53,6 +58,9 @@ impl DecompressError {
             },
             Self::FromBinariesErr(_) => {
                 DecompressError::FromBinariesErr(format!("Parsin err: the vector given cannot be parsed into a Compressed Binaries"))
+            },
+            Self::PrimitiveDataErr(_) => {
+                DecompressError::PrimitiveDataErr(format!("Decompressing primitive data type directly is not supported currently, Wrap it in a struct, and derive it with COmprezable instead"))
             }
             Self::Unknown(s) => {
                 DecompressError::Unknown(s)

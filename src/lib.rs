@@ -8,22 +8,28 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-
- 
+//! # Description
+//! Comprez is a compression library for compressing any struct and enums
+//! 
+//! # Example
 //! ```rust
+//! 
 //! use comprez_macro::Comprezable;
 //! use comprez::{*, error::{CompressError, DecompressError}, comprezable::Comprezable};   
 //! 
 //! #[derive(Comprezable, Debug)]
 //! struct MyStruct {
-//!     [#maxNum=10000] //Compulsory for each field
+//!     #[maxNum=10000] //Compulsory for each field
 //!     num1: u32,
-//!     [#maxNum=888]
+//!     #[maxNum=888]
 //!     num2: u16,
-//!     [#maxNum=100] //from -100 to 100
-//!     num3: i8,
+//!     #[maxNum=100] //from -100 to 100
+//!     num3: i8,//use i8 instead of u8
 //!     other_struct: OtherStruct,
-//!     vec1: Vec<u8>
+//!     vec1: Vec<u8>,
+//!     vec2: Vec<OtherStruct>,
+//!     #[maxNum=200] 
+//!     vec3: Vec<u16>
 //! }
 //! 
 //! #[derive(Comprezable, Debug)]
@@ -39,6 +45,8 @@
 //!         num3: 10,
 //!         other_struct: OtherStruct { num4: 200 },
 //!         vec1: vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+//!         vec2: vec![OtherStruct{num4: 100}, OtherStruct{num4: 200}],
+//!         vec3: vec[11, 12, 13, 14],
 //!     };
 //!     
 //!     let compressed = demo_data.compress().unwrap()
@@ -56,8 +64,8 @@
 //! Since the compression of Vec<u8> uses LZ4 flex crate, compressing small vectors might increase the space instead. 
 //! However in the future, self implementation will be created.
 
-use core::panic;
 
+use comprezable::Comprezable;
 use error::DecompressError;
 
 pub mod error;
@@ -79,6 +87,10 @@ pub enum Compressed {
 }
 
 impl Compressed {
+    pub fn new() -> Self {
+        Self::Binaries(vec![])
+    }
+
     ///extract the bytes from the wrapper
     pub fn to_bytes(&self) -> Vec<u8> {
         match self {
@@ -163,28 +175,21 @@ impl BinaryChunk {
         }
     }
 
-    pub fn chunk_up_v2(binaries: &mut Vec<u8>, vec: Vec<Self>) -> Result<Vec<Vec<u8>>, DecompressError> {
-        let mut res: Vec<Vec<u8>> = vec![];
-        for binarychunk in vec {
-            match binarychunk {
-                Self::Single(s) => {
-                    let compressed = binaries.drain(0 .. s).collect::<Vec<_>>();
-                    res.push(compressed);
-                },
-                Self::Nested(chunks) => {
-                    //let mut chunked_binaries = vec![];
-                    let a = BinaryChunk::chunk_up_v2(binaries, chunks).unwrap().into_iter().flatten().collect::<Vec<_>>();
-                    res.push(a);
-                },
-                Self::Delimeter => {
-                    let compressed = delimeter_chunk_v2(binaries).unwrap();
-                    res.push(compressed);
-                }
+
+    pub fn decompress<T: Comprezable>(&self, compressed: &mut Vec<u8>) -> Result<T, DecompressError> {
+
+        match self {
+            BinaryChunk::Single(size) => {
+                T::decompress_from_binaries(compressed, Some(*size))
+            },
+            BinaryChunk::Nested(_) => {
+                T::decompress_from_binaries(compressed, None)
+            },
+            BinaryChunk::Delimeter => {
+                T::decompress_from_binaries(compressed, None)
             }
         }
-        
-        Ok(res)
-    } 
+    }
 }
 
 
@@ -212,57 +217,10 @@ fn to_binary(bytes: Vec<u8>) -> Vec<u8> {
 
 
 
-fn delimeter_chunk_v2(binaries: &mut Vec<u8>) -> Result<Vec<u8>, DecompressError> {
-    //chunk the meta length properly
-    let mut chunk_metas: Vec<u8> = vec![];
-    loop {
-        if binaries.len() < 8 {
-            return Err(DecompressError::WrongBytesLength(String::new()))
-        }
-        let delimeter = binaries.remove(0);
-        match delimeter {
-            0 => {
-                chunk_metas.extend(binaries.drain(0 .. 7));
-            },
-            1 => {
-                chunk_metas.extend(binaries.drain(0 .. 7));
-                break
-            },
-            _ => {
-                panic!()
-            }
-        };
-    }
-    
-    //turn the chunked to parseable binaries
-    let chunk_metas = chunk_metas.chunks(8).filter(|&chunk| chunk.len() == 8).collect::<Vec<&[u8]>>()
-    .into_iter()
-    .flatten()
-    .map(|bit| bit.to_string())
-    .collect::<String>();
-
-    //binaries to int AKA; size (in bytes) of the compressed vec
-    let meta = u128::from_str_radix(&chunk_metas, 2).unwrap();
-    let length = binaries.len() as u128;
-    if length < meta * 8 {
-        return Err(DecompressError::WrongBytesLength(String::new()))
-    }
-    
-    
-
-    let mut res_binaries: Vec<u8> = vec![];
-    for _ in 1 ..= meta {
-        if binaries.len() < 8 {
-            return Err(DecompressError::WrongBytesLength(String::new()))
-        }
-        res_binaries.extend(binaries.drain(0 .. 8));
-    }
-    
-    Ok(res_binaries)
-}
 
 
 
+/* 
 #[cfg(test)]
 mod tests {
     use lz4_flex::decompress_size_prepended;
@@ -272,35 +230,8 @@ mod tests {
     #[test]
     fn test_vec_u8() {
         
-        let raw = vec![1u8, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-        let demo = vec![8u8, 128, 11, 0, 0, 0, 176, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-        let compressed = Compressed::Bytes(demo);
-        let mut binaries = compressed.to_binaries();
-        
-
-        let a = delimeter_chunk_v2(&mut binaries).unwrap();
-        let decompressed = Compressed::Binaries(a).to_bytes();
-        println!("decompressed: {:?}", decompressed);
-
-        //binary format
-        let b = decompress_size_prepended(&decompressed).unwrap();
-
-        println!(" raw: {:?}", raw);
-        println!("decompressed: {:?}",  b);
-
-        assert_eq!(raw, b);
 
     }
 
-    #[test]
-    fn binary_chunk_v2() {
-        let demo_nested = vec![BinaryChunk::Single(1), BinaryChunk::Single(3), BinaryChunk::Nested(vec![BinaryChunk::Single(5)]), BinaryChunk::Single(2)];
-        let demo = BinaryChunk::Nested(demo_nested);
-        let mut demo_binaries = vec![1u8, 2, 3, 4, 5, 6, 7, 8, 9, 10,11, 12, 13, 14, 15, 16];
-        
-        if let BinaryChunk::Nested(chunks) = demo {
-            let _chunk = BinaryChunk::chunk_up_v2(&mut demo_binaries, chunks);
-        }
- 
-    }
 }
+*/

@@ -1,3 +1,7 @@
-/target
-/benches
-/tests
+target
+
+benches
+
+tests
+
+Cargo.lock

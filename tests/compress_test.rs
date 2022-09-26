@@ -8,16 +8,14 @@ struct FatherStruct {
     num1: i32,
     #[maxNum=10000]
     num2: i64,
-    #[maxNum=100]
-    num3: u8,
     #[maxNum=1000]
     num4: u16,
     num5: SonStruct,
 }
 
 impl FatherStruct {
-    pub fn new(num1: i32, num2: i64, num3: u8, num4: u16, num5: SonStruct) -> Self {
-        FatherStruct { num1, num2, num3, num4, num5 }
+    pub fn new(num1: i32, num2: i64, num4: u16, num5: SonStruct) -> Self {
+        FatherStruct { num1, num2, num4, num5 }
     }
 }
 
@@ -61,7 +59,6 @@ mod tests {
             let mut rng = thread_rng();
             let num1:i32 = rng.gen_range(-9999 ..= 9999); 
             let num2:i64 = rng.gen_range(-9999 ..= 9999); 
-            let num3:u8 = rng.gen_range(0 ..= 99); 
             let num4:u16 = rng.gen_range(0 ..= 999); 
             let num6:i128 = rng.gen_range(-9999 ..= 9999); 
             let num7:i8 = rng.gen_range(-99 ..= 99); 
@@ -69,7 +66,7 @@ mod tests {
     
             let num8 = GrandSonStruct::new(num9);
             let num5 = SonStruct::new(num6, num7, num8);
-            let data = FatherStruct::new(num1, num2, num3, num4, num5);
+            let data = FatherStruct::new(num1, num2, num4, num5);
     
             let compressed = data.clone().compress().unwrap();
             let decompressed = FatherStruct::decompress(compressed).unwrap();
@@ -113,28 +110,6 @@ mod tests {
     }
 
 
-
-
-    struct AllRandomFather {
-        num1: u32,
-        num2: i8,
-        son: AllRandomSon,
-    }
-
-    struct AllRandomSon {
-        num3: i64,
-        num4: i32,
-        grand_son: AllRandomGrandson,
-    }
-
-    struct AllRandomGrandson {
-        vec1: Vec::<u8>
-    }
-
-    #[test]
-    fn all_random() {
-
-    }
 
 
     #[derive(Comprezable, Debug)]

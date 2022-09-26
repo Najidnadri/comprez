@@ -2,13 +2,15 @@
 name = "comprez"
 authors = ["muhd.najid.nadri@gmail.com"]
 repository = "https://github.com/Najidnadri/comprez"
-version = "0.2.5"
+homepage = "https://github.com/Najidnadri/comprez"
+version = "0.2.6"
 edition = "2021"
-categories = ["Algorithm", "Compression"]
+categories = ["compression"]
 license = "MIT OR Apache-2.0"
 keywords = ["compress", "algorithm", "struct"]
 description = "A library for compressing and decompressing structs"
 readme = "README.md"
+exclude = ["benches/*", "tests/*"]
 
 
 
