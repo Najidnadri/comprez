@@ -25,6 +25,6 @@ criterion = "0.3"
 comprez_macro = { path= "../comprez_macro" }
 rand = "0.8.4"
 
-[[bench]]
-name = "compress_benchmark"
-harness = false
+# [[bench]]
+# name = "compress_benchmark"
+# harness = false
