@@ -5,7 +5,7 @@ pub trait Comprezable<Rhs = Self> {
     /// ## Example
     /// ```rust
     /// use comprez_macro::Comprezable;
-    /// use comprez::{*, error::{CompressError, DecompressError}, comprezable::Comprezable};
+    /// use comprez::comprezable::Comprezable;
     /// 
     /// #[derive(Comprezable, Debug)]
     /// struct MyStruct {
@@ -234,7 +234,6 @@ impl Comprezable for u128 {
         let mult_8_bit_size = find_mult_8_bit_size(max_num, 8, 0, 2);
         let compressed_binaries = compress_num(self, mult_8_bit_size, 8, 2, 0);
         let res = compressed_binaries.iter().map(|&binary| binary as u8).collect::<Vec<u8>>();
-
         Ok(Compressed::Binaries(res))
     }
 
@@ -698,9 +697,8 @@ impl<T: Comprezable + Clone + Debug> Comprezable for Vec<T> {
             let compressed = element.compress_to_binaries(max_num)?;
             all_compressed = all_compressed.combine(compressed);
         }
-
+        let all_compressed = Compressed::Bytes(all_compressed.to_bytes());
         let len = all_compressed.to_bytes().len();
-
         let compressed_metalength = Compressed::Binaries(compress_metalength_v2(len));
         let res = compressed_metalength.combine(all_compressed);
         Ok(res)
@@ -716,13 +714,12 @@ impl<T: Comprezable + Clone + Debug> Comprezable for Vec<T> {
     }
 
     fn decompress_from_binaries(compressed: &mut Vec<u8>, bit_size: Option<usize>) -> Result<Self, DecompressError> where Self:Sized {
-        let size = calc_delimeter_size(compressed)?;
+        let size = calc_delimeter_size(compressed, 7)?;
 
         let mut res_binaries: Vec<u8> = vec![];
         for _ in 1 ..= size {
             res_binaries.extend(compressed.drain(0 .. 8));
         }
-
         //decode here
         let mut res: Vec<T> = vec![];
         loop {
@@ -739,19 +736,19 @@ impl<T: Comprezable + Clone + Debug> Comprezable for Vec<T> {
     }
 }
 
-fn calc_delimeter_size(compressed: &mut Vec<u8>) -> Result<u128, DecompressError> {
+pub fn calc_delimeter_size(compressed: &mut Vec<u8>, delimeter_size: usize) -> Result<u128, DecompressError> {
     let mut chunk_metas: Vec<u8> = vec![];
     loop {
-        if compressed.len() < 8 {
+        if compressed.len() < delimeter_size + 1 {
             return Err(DecompressError::WrongBytesLength(format!("Not enough bytes to calculate the metalength of compressed vector")))
         }
         let delimeter = compressed.remove(0);
         match delimeter {
             0 => {
-                chunk_metas.extend(compressed.drain(0 .. 7));
+                chunk_metas.extend(compressed.drain(0 .. delimeter_size));
             },
             1 => {
-                chunk_metas.extend(compressed.drain(0 .. 7));
+                chunk_metas.extend(compressed.drain(0 .. delimeter_size));
                 break
             },
             _ => {
@@ -768,12 +765,41 @@ fn calc_delimeter_size(compressed: &mut Vec<u8>) -> Result<u128, DecompressError
 
     //binaries to int AKA; size (in bytes) of the compressed vec
     let meta = u128::from_str_radix(&chunk_metas, 2).unwrap();
-    let length = compressed.len() as u128;
-    if length < meta * 8 {
-        return Err(DecompressError::WrongBytesLength(format!("length of compressed bytes is shorter than meta-length of compressed vector, AKA meta-length out of bound. meta-length: {}, compressed bytes length: {}", meta, length)))
-    }
 
     Ok(meta)
+}
+
+
+pub fn comprez_enum_val<T: Comprezable + Clone + Debug>(val: Option<T>, n: usize, max_num: Option<u128>) -> Result<Compressed, CompressError> {
+    let n = format!("{:b}", n);
+    let meta = n.chars().map(|c| c.to_digit(2).unwrap() as u8).rev().collect::<Vec<u8>>();
+    let mut meta = meta.chunks(4).map(|chunk| {
+        let mut temp = chunk.to_vec();
+        let mut count = temp.len();
+        while count < 4 {
+            temp.push(0);
+            count += 1;
+        }
+
+        temp.push(0);
+        temp.reverse();
+        temp
+    }).collect::<Vec<Vec<u8>>>();
+    meta.reverse();
+    meta.last_mut().unwrap()[0] = 1;
+    let meta = meta.into_iter().flatten().collect::<Vec<u8>>();
+    let meta = Compressed::Binaries(meta);
+
+    match val {
+        Some(t) => {
+            let compressed = t.compress_to_binaries(max_num)?;
+            let compressed = meta.combine(compressed);
+            Ok(compressed)
+        },
+        None => {
+            Ok(meta)
+        }
+    }
 }
 
 
@@ -790,36 +816,7 @@ fn compress_num<N: Ord + std::ops::Div<Output = N> + std::ops::Rem<Output = N> +
     mult_8_bit
 }
 
-pub fn compress_metalength(num: usize) -> Result<Vec<u8>, CompressError> {
-    //find the binary format of metalength
-    let mut binaries = encode(num, 2, 8, 0).iter().map(|&bit| bit as u8).collect::<Vec<u8>>();
-
-    //make full use of byte size
-    let remainders = binaries.len() % 8;
-    if remainders != 0 {
-        for _n in 0 .. (8 - remainders) {
-            binaries.insert(0, 0);
-        }
-    }
-
-    //chunk to 7 element each, the last got inserted with 1, the output will be vector of  binaries of 8 
-    let mut chunked_binaries = binaries.chunks(7).map(|chunk| {
-        let mut temp = chunk.to_vec();
-        temp.insert(0, 0);
-        while temp.len() < 8 {
-            temp.push(0)
-        }
-        temp
-    }).collect::<Vec<Vec<u8>>>();
-    chunked_binaries.last_mut()
-    .ok_or(CompressError::create(CompressError::MetaForVecErr(String::new())))?
-    [0] = 1;
-
-    let res = chunked_binaries.into_iter().flatten().collect::<Vec<_>>();
-    Ok(res)
-}
-
-pub fn compress_metalength_v2(num: usize) -> Vec<u8> {
+fn compress_metalength_v2(num: usize) -> Vec<u8> {
     let mut binaries = encode(num, 2, 0, 0).iter().map(|&bit| bit as u8).collect::<Vec<u8>>();
     binaries.reverse();
 

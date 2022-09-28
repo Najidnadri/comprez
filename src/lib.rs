@@ -15,7 +15,7 @@
 //! ```rust
 //! 
 //! use comprez_macro::Comprezable;
-//! use comprez::{*, error::{CompressError, DecompressError}, comprezable::Comprezable};   
+//! use comprez::comprezable::Comprezable;   
 //! 
 //! #[derive(Comprezable, Debug)]
 //! struct MyStruct {

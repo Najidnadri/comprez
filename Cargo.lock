@@ -68,7 +68,7 @@ dependencies = [
 
 [[package]]
 name = "comprez"
-version = "0.2.6"
+version = "0.2.7"
 dependencies = [
  "comprez_macro",
  "criterion",
@@ -78,7 +78,7 @@ dependencies = [
 
 [[package]]
 name = "comprez_macro"
-version = "0.2.6"
+version = "0.2.7"
 dependencies = [
  "proc-macro2",
  "quote",

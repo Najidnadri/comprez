@@ -1,4 +1,3 @@
-use comprez::comprezable::{compress_metalength_v2};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 /*
@@ -63,7 +62,6 @@ fn metalength_bench(c: &mut Criterion) {
 
 fn metalength(num: usize) {
     //let _ = compress_metalength(num);
-    let _ = compress_metalength_v2(num);
 } 
 
 

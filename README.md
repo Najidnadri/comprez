@@ -1,7 +1,7 @@
 
-# Rust Library for Compressing Structs.
+# Rust Library for Compressing Structs and Enums.
 
-A rust library for compressing and decompressing structs.
+A rust library for compressing and decompressing structs and enums.
 Note that the library is still under heavy development and breaking changes may occur.
 
 ## Description
@@ -14,8 +14,8 @@ Put this into your cargo.toml
 
 ```
 [dependencies]
-comprez_macro = 0.2.6
-comprez = 0.2.6
+comprez_macro = 0.2.7
+comprez = 0.2.7
 ```
 
 
@@ -24,11 +24,11 @@ comprez = 0.2.6
 
 ```
 use comprez_macro::Comprezable;
-use comprez::{*, error::{CompressError, DecompressError}};   
+use comprez::comprezable::Comprezable;   
 
 #[derive(Comprezable, Debug, Clone)]
 struct MyStruct {
-    [#maxNum=10000] //Compulsory for each field
+    [#maxNum=10000] //Compulsory for each integer field except for u8
     num1: u32,
     [#maxNum=888]
     num2: u16,
@@ -36,13 +36,21 @@ struct MyStruct {
     num3: i8, //use i8 instead of u8
     other_struct: OtherStruct,
     vec1: Vec<u8>,
-    vec2: Vec<OtherStruct>
+    vec2: Vec<OtherStruct>,
+    enum1: MyEnum::Num5(10)
 }
 
 #[derive(Comprezable, Debug, Clone)]
 struct OtherStruct {
     #[maxNum=1000000]
     num4: u128,
+}
+
+#[derive(Comprezable, Debug, Clone)]
+enum MyEnum {
+    #[maxNum=100]
+    Num5(u32),
+    Vec3(Vec<u8>)
 }
 
 fn main() {
