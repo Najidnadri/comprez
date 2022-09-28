@@ -84,7 +84,7 @@ TODO!
 - [x] Signed 
 - [x] Vec::u8
 - [x] Vec of Comprezable(s)
-- [ ] enums
+- [x] enums
 - [ ] Async Write/Read 
 - [ ] Even numbers
 - [ ] Strings
